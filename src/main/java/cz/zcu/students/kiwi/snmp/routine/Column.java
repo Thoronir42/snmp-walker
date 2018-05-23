@@ -1,17 +1,17 @@
-package cz.zcu.students.kiwi.snmp;
+package cz.zcu.students.kiwi.snmp.routine;
 
-public class SnmpColumn {
+public class Column {
     private int childOid;
     private String caption;
     private int width;
 
     private String valFormat;
 
-    public SnmpColumn(int childOid, String caption) {
+    public Column(int childOid, String caption) {
         this(childOid, caption, caption.length());
     }
 
-    public SnmpColumn(int childOid, String caption, int width) {
+    public Column(int childOid, String caption, int width) {
         this.childOid = childOid;
 
         this.setCaption(caption);
@@ -22,7 +22,7 @@ public class SnmpColumn {
         return childOid;
     }
 
-    public SnmpColumn setChildOid(int childOid) {
+    public Column setChildOid(int childOid) {
         this.childOid = childOid;
         return this;
     }
@@ -31,7 +31,7 @@ public class SnmpColumn {
         return caption;
     }
 
-    public SnmpColumn setCaption(String caption) {
+    public Column setCaption(String caption) {
         int oldLength = this.caption != null ? this.caption.length() : 0;
         this.caption = caption;
 
@@ -42,7 +42,7 @@ public class SnmpColumn {
         return this;
     }
 
-    public SnmpColumn setWidth(int width) {
+    public Column setWidth(int width) {
         this.width = width;
         this.valFormat = "%" + width + "s";
         return this;

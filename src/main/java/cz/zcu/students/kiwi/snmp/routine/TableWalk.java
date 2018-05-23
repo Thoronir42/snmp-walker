@@ -1,5 +1,7 @@
-package cz.zcu.students.kiwi.snmp;
+package cz.zcu.students.kiwi.snmp.routine;
 
+import cz.zcu.students.kiwi.snmp.SnmpClient;
+import cz.zcu.students.kiwi.snmp.SnmpRoutine;
 import org.apache.log4j.Logger;
 import org.snmp4j.PDU;
 import org.snmp4j.event.ResponseEvent;
@@ -8,36 +10,34 @@ import org.snmp4j.smi.OID;
 import java.io.IOException;
 import java.io.PrintStream;
 
-public class SnmpTableWalk {
-    private static Logger log = Logger.getLogger(SnmpTableWalk.class);
+public class TableWalk extends SnmpRoutine {
+    private static Logger log = Logger.getLogger(TableWalk.class);
 
     private static final int MAX_TABLE_VALUES = 32;
 
-    private final SnmpClient snmp;
     private final OID tableOid;
     private final int tableOidLength;
 
-    private SnmpColumn[] columns;
+    private Column[] columns;
 
-    public SnmpTableWalk(SnmpClient snmp, OID tableOid) {
-        this.snmp = snmp;
+    public TableWalk(OID tableOid) {
         this.tableOid = tableOid;
         this.tableOidLength = tableOid.getValue().length;
 
         log.info("Initialized table with OID: " + tableOid.toDottedString());
     }
 
-    public SnmpTableWalk setColumns(SnmpColumn... columns) {
+    public TableWalk setColumns(Column... columns) {
         this.columns = columns;
         log.info("Assigned " + columns.length + " columns");
-        for (SnmpColumn column : columns) {
+        for (Column column : columns) {
             log.debug("- Column OID:" + column.getChildOid() + ", caption: " + column.getCaption());
         }
 
         return this;
     }
 
-    public int walk(PrintStream out) throws IOException {
+    public int run(SnmpClient snmp, PrintStream out) throws IOException {
         log.info("walk() starting");
 
         log.debug("printing table head");
