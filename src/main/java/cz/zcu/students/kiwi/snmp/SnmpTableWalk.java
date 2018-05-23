@@ -23,54 +23,75 @@ public class SnmpTableWalk {
         this.snmp = snmp;
         this.tableOid = tableOid;
         this.tableOidLength = tableOid.getValue().length;
+
+        log.info("Initialized table with OID: " + tableOid.toDottedString());
     }
 
     public SnmpTableWalk setColumns(SnmpColumn... columns) {
         this.columns = columns;
+        log.info("Assigned " + columns.length + " columns");
+        for (SnmpColumn column : columns) {
+            log.debug("- Column OID:" + column.getChildOid() + ", caption: " + column.getCaption());
+        }
+
         return this;
     }
 
     public int walk(PrintStream out) throws IOException {
+        log.info("walk() starting");
 
+        log.debug("printing table head");
         out.print("|  #|");
         OID[] colOids = new OID[columns.length];
         for (int c = 0; c < columns.length; c++) {
-            colOids[c] = new OID(tableOid).append(columns[c].getN());
-            out.format(" %" + columns[c].getWidth() + "s |", columns[c].getCaption());
+            colOids[c] = new OID(tableOid).append(columns[c].getChildOid());
+            out.format(" " + columns[c].format(columns[c].getCaption()) + " |");
         }
         out.println();
 
         OID breakerOID = colOids[0];
 
         int n = 0;
+        log.info("Starting to query and list table items");
         while (n < MAX_TABLE_VALUES) {
             ResponseEvent responseEvent = snmp.getNext(colOids);
             PDU responsePdu = responseEvent.getResponse();
-            if(responseEvent == null || responsePdu.get(0) == null){
+            if (responseEvent == null || responsePdu.get(0) == null) {
                 log.warn("Response PDU is empty");
                 break;
             }
 
             OID respOID = responsePdu.get(0).getOid();
 
+            // table = 1.2.4 (tableOidLength)
+            // desired oid = 1.2.4.X
+            // if result oid does not equal expected oid, the value does not exist
             if (breakerOID.leftMostCompare(this.tableOidLength + 1, respOID) != 0) {
+                log.info("Response OID is not same as expected");
                 break;
             }
 
-            System.out.format("|%3d|", n);
-
-            for (int c = 0; c < columns.length; c++) {
-                String value = responsePdu.get(c).getVariable().toString();
-                out.format(" %" + columns[c].getWidth() + "s |", value);
-                // assign OID to get nextValue
-                colOids[c] = responsePdu.get(c).getOid();
-            }
-
-            out.println();
+            printRow(out, colOids, n, responsePdu);
 
             n++;
         }
 
         return n;
+    }
+
+    private void printRow(PrintStream out, OID[] colOids, int n, PDU responsePdu) {
+        log.info("Printing row " + n);
+
+        out.format("|%3d|", n);
+
+        for (int c = 0; c < columns.length; c++) {
+            String value = responsePdu.get(c).getVariable().toString();
+            out.print(" " + columns[c].format(value) + " |");
+
+            // assign OID to get nextValue
+            colOids[c] = responsePdu.get(c).getOid();
+        }
+
+        out.println();
     }
 }

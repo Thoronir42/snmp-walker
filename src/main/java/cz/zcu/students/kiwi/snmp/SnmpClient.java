@@ -1,9 +1,7 @@
 package cz.zcu.students.kiwi.snmp;
 
-import org.snmp4j.CommunityTarget;
-import org.snmp4j.PDU;
-import org.snmp4j.Snmp;
-import org.snmp4j.Target;
+import org.apache.log4j.Logger;
+import org.snmp4j.*;
 import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.smi.GenericAddress;
@@ -15,6 +13,7 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 import java.io.IOException;
 
 public class SnmpClient implements AutoCloseable {
+    private static final Logger log = Logger.getLogger(SnmpClient.class);
 
     private Snmp snmp;
 
@@ -45,34 +44,41 @@ public class SnmpClient implements AutoCloseable {
     public ResponseEvent get(OID... oids) throws IOException {
         PDU pdu = createPDU(PDU.GET, oids);
 
-        ResponseEvent event = snmp.send(pdu, getTarget(), null);
-        if (event == null) {
-            throw new RuntimeException("GET timed out");
-        }
-
-        return event;
+        return send(pdu, getTarget(), null, "GET");
     }
 
     public ResponseEvent getNext(OID... oids) throws IOException {
         PDU pdu = createPDU(PDU.GETNEXT, oids);
 
-        ResponseEvent event = snmp.send(pdu, getTarget(), null);
+        return send(pdu, getTarget(), null, "GETNEXT");
+    }
+
+    public void close() throws IOException {
+        log.info("Closing connection");
+        this.snmp.close();
+        log.debug("Closed");
+    }
+
+    private ResponseEvent send(PDU pdu, Target target, TransportMapping mappings, String method) throws IOException {
+        log.info(method + " with " + pdu.size() + " OIDs");
+
+        long start = System.currentTimeMillis();
+        ResponseEvent event = snmp.send(pdu, target, mappings);
+        long stop = System.currentTimeMillis();
+        log.debug(method + " response received after " + (stop - start) + "ms");
         if (event == null) {
-            throw new RuntimeException("GETNEXT timed out");
+            throw new IOException(method + " timed out");
         }
 
         return event;
     }
 
-    public void close() throws IOException {
-        this.snmp.close();
-    }
-
-
     private PDU createPDU(int pduType, OID... oids) {
+        log.info("Creating PDU with type " + pduType + " for " + oids.length + " OIDs");
         PDU pdu = new PDU();
         for (OID oid : oids) {
             pdu.add(new VariableBinding(oid));
+            log.debug("- " + oid.toDottedString());
         }
         pdu.setType(pduType);
 
