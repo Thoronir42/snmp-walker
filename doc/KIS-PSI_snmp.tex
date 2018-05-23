@@ -1,0 +1,125 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[czech]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{array}
+
+%Pravidlo pro řádkování
+\renewcommand{\baselinestretch}{1.5}
+
+%Pravidlo pro začínání kapitol na novém řádku
+\let\oldsection\section
+\renewcommand\section{\clearpage\oldsection}
+
+%Formáty písem pro nadpisy (-změněno na bezpatkové \sffamily z původního \normalfont
+\titleformat{\section}
+{\sffamily\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+{\sffamily\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+{\sffamily\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+%Nastavení zvýrazňování kódu v \lslisting
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\lstset{commentstyle=\color{mygreen},keywordstyle=\color{blue},numberstyle=\tiny\color{mygray}}
+
+\author{Štěpán Ševčík}
+
+\begin{document}
+
+%-------------Úvodni strana---------------
+\begin{titlepage}
+
+\includegraphics[width=50mm]{img/FAV.jpg}
+\\[160 pt]
+\centerline{ \Huge \sc KIV/PSI - Počítačové Sítě}
+\centerline{ \huge \sc Semestrální práce}
+\\[12 pt]
+{\large \sc
+\centerline{Klient SNMP}
+}
+
+
+{
+\vfill 
+\parindent=0cm
+\textbf{Jméno:} Štěpán Ševčík\\
+\textbf{Osobní číslo:} A17B0087P\\
+\textbf{E-mail:} kiwi@students.zcu.cz\\
+\textbf{Datum:} {\large \today\par} %datum
+
+}
+
+\end{titlepage}
+
+%------------------Obsah-------------------
+\newpage
+\setcounter{page}{2}
+\setcounter{tocdepth}{3}
+\tableofcontents
+%------------------------------------------
+
+%--------------Text dokumentu--------------
+
+
+\section{Zadání}
+Sestavte program pro čtení a zobrazení obsahu jedné nebo více tabulek MIB.
+Čtěte je ty sloupce, které budete zobrazovat, tzn. že pro vybrané tabulky nebudete zobrazovat všechny sloupce, ale pouze např. 4 až 5 sloupců tak, aby zobrazovaná informace dávala smysl.
+
+\subsection{SNMP}
+SNMP (Simple Network Management Protocol) je protokol pro správu zařízení po síti. Pomocí tohoto protokolu lze číst a hlídat hodnoty zařízení adresovaných pomocí objektových identifikátorů (OID).
+Struktura objektů je zřetězena do hiearchického stromu, kde například \texttt{1.3.6.1.2.1.4.21.1} je identifikátor tabulky síťových rozhraní.
+Tabulky obsahují sloupce, které opět respektují hiearchický model, a tedy například sloupec cílové adresy je v \texttt{1.3.6.1.2.1.4.21.1.1}.
+
+K hodnotám lze přistupovat pomocí zpráv GET resp. GETNEXT.
+
+\section{Návrh}
+\subsection{Programové rozhraní}
+Úlohou je čtení obsahu SNMP tabulky, ježjíž identifikátorem je OID. Dalším z požadavků je volitelnost sloupců.
+
+Prvotní nápad je vytvoření struktury Tabula, která bude obsahovat vlastní OID a množinu sloupců, což je struktura obsahující název a konkretizující část OID.
+
+Jelikož není třeba s daty provádět komplexnější operace, stačí získat a rovnou vypsat.
+
+\subsection{Práce se SNMP}
+Pro získávání dat je potřeba mít SNMP klienta, který bude řešit převod aplikačních požadavků na data protokolu.
+Přenašečem dat protokolu je PDU (tedy Protocol Data Unit), který lze zjednodušeně chápat jako kolekci OID a hodnot.
+
+SNMP požadavek obsahuje PDU obsahující výčet požadovaných OID, zatímco odpověď obsahuje množinu získaných OID a jejich hodnot.
+V určitých případech však tyto množiny mohou být rozlišné, například v případě volání GET a neexistence požadovaného OID nebo v případě volání GETNEXT.
+
+Požadavkem je průchod tabulkou, konkrétní OID k zjištění nejsou známy a proto je třeba volat GETNEXT s OID požadovaných sloupců.
+Při získávání následující hodnoty je třeba opět volat GETNEXT, již s OID, které bylo získáno v minulém volání.
+
+Nyní je však třeba dbát pozor na získanou hodnotu protože například při procházení tabulky \text{1.3.6.1.2.4}, sloupce \texttt{2}, získat OID sloupce \texttt{3}.
+Znamená to, že v předcházejícím požadavku byla tabulka již prolezena a je to znamení, že má být výpis zastaven.
+
+\section{Implementace}
+Pro vypracování této úlohy byl zvolen programovací jazyk Java, pro který již existuje knihovna pro práci se SNMP (org.snmp4j).
+Nad touto knihovnou byl vytvořen klient zastřešující požadovanou funkcionalitu protokolu SNMP.
+
+Pro toto řešení byla vytvořena rutina \texttt{TableWalk}, která je parametrizována OID požadované tabulky.
+V této rutině jsou dále nastaveny požadované sloupce, tj. jejich OID, název a šířka pro výpis.
+Tato rutina je dále spuštěna se SNMP klientem, nad kterým má běžet, a výstupním streamem, do kterého má vypisovat svůj běhový výstup, tj. hlavičku a tělo tabulky.
+
+Použitý SNMP klient zprostředkovává volání do knihovny a ošetřuje výjímečné stavy. Dále klient detailně loguje události pomocí knihovny Log4J, což zahrnuje například volání metod nebo doba trvání požadavků.
+
+Jednoduchá integrace a spuštění obalové knihovny je implementováno třídou \texttt{SnmpDemoMain}, ve kterém je vytvořena rutina procházení routovací a vybrány sloupce čísla rozhraní, typu routy a adresy a masky sítě.
+
+\section{Závěr}
+Výsledkem této semestrální práce je všeobecně použitelný procházeč SNMP tabulek a případně nástroj pro práci se SNMP.
+
+
+%------------------------------------------
+
+\end{document}
