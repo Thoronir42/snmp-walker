@@ -41,10 +41,15 @@ public class SnmpDemoMain {
         try (SnmpClient client = new SnmpClient(connectString, community, true)) {
             log.info("Connected");
 
-            Column[] columns = {new Column(2, "I-face", 10), new Column(8, "ipRouteType"), new Column(1, "ipDest", 15), new Column(11, "ipRouteMask", 15),};
+            Column[] columns = {
+                    new Column(2, "iface", 10, "Interface number"),
+                    new Column(8, "type", "ipRouteType"),
+                    new Column(1, "dest", 15, "ipDest"),
+                    new Column(11, "mask", 15, "ipRouteMask"),
+            };
 
             long start = System.currentTimeMillis();
-            TableWalk tableWalk = new TableWalk(OIDDict.RoutingTable());
+            TableWalk tableWalk = OIDDict.RoutingTable();
             tableWalk.setColumns(columns);
 
             int itemsWalked = tableWalk.run(client, System.out);

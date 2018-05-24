@@ -3,6 +3,8 @@ package cz.zcu.students.kiwi.snmp.routine;
 public class Column {
     private int childOid;
     private String caption;
+    private String fullName;
+
     private int width;
 
     private String valFormat;
@@ -11,11 +13,27 @@ public class Column {
         this(childOid, caption, caption.length());
     }
 
+    public Column(int childOid, String caption, String fullName) {
+        this(childOid, caption);
+        this.setFullName(fullName);
+    }
+
     public Column(int childOid, String caption, int width) {
         this.childOid = childOid;
 
         this.setCaption(caption);
         this.setWidth(width);
+    }
+
+    public Column(int childOid, String caption, int width, String fullName) {
+        this(childOid, caption, width);
+        this.setFullName(fullName);
+    }
+
+    private Column setFullName(String fullName) {
+        this.fullName = fullName;
+
+        return this;
     }
 
     public int getChildOid() {
@@ -54,5 +72,9 @@ public class Column {
 
     public String format(String... args) {
         return String.format(this.valFormat, (Object[]) args);
+    }
+
+    public String getFullName() {
+        return this.fullName != null ? this.fullName : this.caption;
     }
 }

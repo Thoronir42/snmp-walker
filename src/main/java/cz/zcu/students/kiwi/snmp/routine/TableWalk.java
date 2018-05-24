@@ -17,14 +17,18 @@ public class TableWalk extends SnmpRoutine {
 
     private final OID tableOid;
     private final int tableOidLength;
+    private final String name;
 
     private Column[] columns;
 
-    public TableWalk(OID tableOid) {
-        this.tableOid = tableOid;
-        this.tableOidLength = tableOid.getValue().length;
+    private int longestCaption = 0, longestFullName = 0;
 
-        log.info("Initialized table with OID: " + tableOid.toDottedString());
+    public TableWalk(OID oid, String name) {
+        this.tableOid = oid;
+        this.tableOidLength = oid.getValue().length;
+        this.name = name;
+
+        log.info("Initialized table with OID: " + oid.toDottedString());
     }
 
     public TableWalk setColumns(Column... columns) {
@@ -32,6 +36,8 @@ public class TableWalk extends SnmpRoutine {
         log.info("Assigned " + columns.length + " columns");
         for (Column column : columns) {
             log.debug("- Column OID:" + column.getChildOid() + ", caption: " + column.getCaption());
+            this.longestCaption = Math.max(longestCaption, column.getCaption().length());
+            this.longestFullName = Math.max(longestFullName, column.getFullName().length());
         }
 
         return this;
@@ -40,14 +46,12 @@ public class TableWalk extends SnmpRoutine {
     public int run(SnmpClient snmp, PrintStream out) throws IOException {
         log.info("walk() starting");
 
-        log.debug("printing table head");
-        out.print("|  #|");
-        OID[] colOids = new OID[columns.length];
-        for (int c = 0; c < columns.length; c++) {
-            colOids[c] = new OID(tableOid).append(columns[c].getChildOid());
-            out.format(" " + columns[c].format(columns[c].getCaption()) + " |");
-        }
+        OID[] colOids = prepareMeta(out);
         out.println();
+
+        log.debug("printing table head");
+
+        printHead(out);
 
         OID breakerOID = colOids[0];
 
@@ -78,6 +82,34 @@ public class TableWalk extends SnmpRoutine {
 
         return n;
     }
+
+    private OID[] prepareMeta(PrintStream out) {
+        out.println("SNMP Table: " + this.name + " (" + this.tableOid.toDottedString() + ")");
+        out.println("Columns:");
+
+        String colNameFormat = "  %" + longestCaption + "s | %" + longestFullName + "s (%s)\n";
+
+        OID[] colOids = new OID[columns.length];
+        for (int c = 0; c < columns.length; c++) {
+            colOids[c] = new OID(tableOid).append(columns[c].getChildOid());
+            out.format(colNameFormat, columns[c].getCaption(), columns[c].getFullName(), colOids[c].toDottedString());
+        }
+
+        return colOids;
+    }
+
+    private void printHead(PrintStream out) {
+        StringBuilder nameRow = new StringBuilder("|  #|");
+        StringBuilder cOidRow = new StringBuilder("|OID|");
+        for (int c = 0; c < columns.length; c++) {
+            nameRow.append(" ").append(columns[c].format(columns[c].getCaption())).append(" |");
+            cOidRow.append(" ").append(columns[c].format("." + columns[c].getChildOid())).append(" |");
+        }
+
+        out.println(nameRow.toString());
+        out.println(cOidRow.toString());
+    }
+
 
     private void printRow(PrintStream out, OID[] colOids, int n, PDU responsePdu) {
         log.info("Printing row " + n);
