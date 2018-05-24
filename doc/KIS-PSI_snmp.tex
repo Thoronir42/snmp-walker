@@ -116,8 +116,24 @@ Použitý SNMP klient zprostředkovává volání do knihovny a ošetřuje výj�
 
 Jednoduchá integrace a spuštění obalové knihovny je implementováno třídou \texttt{SnmpDemoMain}, ve kterém je vytvořena rutina procházení routovací a vybrány sloupce čísla rozhraní, typu routy a adresy a masky sítě.
 
+\subsection{Použití}
+
+\noindent Program je k nalezení v adresáři dist a spouští se příkazem:
+
+\texttt{java -jar snmp-demo.jar host (community)}.
+
+\noindent Při nesprávném použití (bez zadání argumentů) program vypisuje nápovědu.
+Součástí běhu je vytvoření logovacího souboru, ve kterém jsou uchovány různé běhové a debugovací informace.
+
+\begin{figure}
+\centering
+\includegraphics[width=10cm]{img/01_cli}
+\caption{Ukázkový výstup}
+\label{fig:cli}
+\end{figure}
+
 \section{Závěr}
-Výsledkem této semestrální práce je všeobecně použitelný procházeč SNMP tabulek a případně nástroj pro práci se SNMP.
+Výsledkem této semestrální práce je všeobecně použitelný procházeč SNMP tabulek a podklady pro jednoduché vytvoření nástroje pro práci se SNMP.
 
 
 %------------------------------------------
