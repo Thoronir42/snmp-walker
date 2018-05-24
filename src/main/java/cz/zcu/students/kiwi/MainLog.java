@@ -13,7 +13,7 @@ public class MainLog {
     private static DateFormat SDF = new SimpleDateFormat("y.MM.dd HH-mm-SS");
 
     public static void configureLogging() {
-        String logFile = "./log/" + SDF.format(System.currentTimeMillis());
+        String logFile = "./log/" + SDF.format(System.currentTimeMillis()) + ".log";
         try {
             FileAppender appender = new FileAppender(new PatternLayout("%p\t%c{1}: %m%n"), logFile);
 

@@ -1,5 +1,7 @@
 *iml
 /target/
+/out/
+
 /log/
 /doc/*.*
 !/doc/*.tex
